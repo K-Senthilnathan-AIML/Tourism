@@ -3,12 +3,9 @@
 # --------------------------------------------------
 
 on:
-
-  # Execute automatically when code is pushed to main
   push:
     branches:
       - main
-
     # Prevent the model commit from triggering another run
     paths-ignore:
       - 'models/**'
@@ -38,58 +35,43 @@ concurrency:
 # --------------------------------------------------
 
 jobs:
-
   data_validation:
-
     name: Data Registration and Validation
-
     runs-on: ubuntu-latest
 
     steps:
-
-      # Step 1: Download repository code
       - name: Checkout Repository
-
         uses: actions/checkout@v4
 
-
-      # Step 2: Set up Python
       - name: Set up Python
-
         uses: actions/setup-python@v5
-
         with:
           python-version: '3.11'
           cache: 'pip'
 
- # Step 3: Install dependencies
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Restore the dataset created in the validation job
-      - name: Download Validated Data
-        uses: actions/download-artifact@v4
+      - name: Register and Validate Dataset
+        run: python scripts/register_data.py
+
+      # Pass the generated dataset to the next job.
+      - name: Upload Validated Data
+        uses: actions/upload-artifact@v4
         with:
           name: validated-data
-          path: .
+          path: |
+            data/tourism.csv
+            reports/data_validation_report.json
+          if-no-files-found: error
 
-      # Step 4: Prepare data
-      - name: Prepare Training and Testing Data
-        run: python scripts/prepare_data.py
-
-      # Step 5: Upload validation report
       - name: Upload Validation Report
-
         uses: actions/upload-artifact@v4
-
         with:
-
           name: validation-report
-
           path: reports/
-
           if-no-files-found: warn
 
 
@@ -98,71 +80,43 @@ jobs:
 # --------------------------------------------------
 
   data_preparation:
-
     name: Data Cleaning and Preparation
-
     runs-on: ubuntu-latest
-
     needs: data_validation
 
     steps:
-
-      # Step 1: Checkout repository
       - name: Checkout Repository
-
         uses: actions/checkout@v4
 
-
-      # Step 2: Set up Python
       - name: Set up Python
-
         uses: actions/setup-python@v5
-
         with:
           python-version: '3.11'
           cache: 'pip'
 
-
-      # Step 3: Install dependencies
       - name: Install Dependencies
-
         run: |
-
           python -m pip install --upgrade pip
-
           pip install -r requirements.txt
 
-        - name: Download Validated Data
+      # Restore the dataset created in the validation job.
+      - name: Download Validated Data
         uses: actions/download-artifact@v4
         with:
           name: validated-data
           path: .
 
-      # Step 4: Prepare data
       - name: Prepare Training and Testing Data
+        run: python scripts/prepare_data.py
 
-        run: |
-
-          python scripts/prepare_data.py
-
-
-      # Step 5: Upload prepared data
       - name: Upload Prepared Data
-
         uses: actions/upload-artifact@v4
-
         with:
-
           name: prepared-data
-
           path: |
-
             artifacts/data/train.csv
-
             artifacts/data/test.csv
-
             artifacts/data/feature_columns.json
-
           if-no-files-found: error
 
 
@@ -171,114 +125,60 @@ jobs:
 # --------------------------------------------------
 
   model_training:
-
     name: Model Training and Evaluation
-
     runs-on: ubuntu-latest
-
     needs: data_preparation
 
     steps:
-
-      # Step 1: Checkout repository
       - name: Checkout Repository
-
         uses: actions/checkout@v4
 
-
-      # Step 2: Set up Python
       - name: Set up Python
-
         uses: actions/setup-python@v5
-
         with:
           python-version: '3.11'
           cache: 'pip'
 
-
-      # Step 3: Install dependencies
       - name: Install Dependencies
-
         run: |
-
           python -m pip install --upgrade pip
-
           pip install -r requirements.txt
 
-
-      # Step 4: Download prepared datasets
       - name: Download Prepared Data
-
         uses: actions/download-artifact@v4
-
         with:
-
           name: prepared-data
-
           path: artifacts/data/
 
-
-      # Step 5: Verify downloaded datasets
       - name: Verify Training and Testing Data
-
         run: |
-
           echo "Checking prepared datasets"
-
           ls -lh artifacts/data/
-
           test -f artifacts/data/train.csv
-
           test -f artifacts/data/test.csv
 
-
-      # Step 6: Train and tune model
       - name: Train Machine Learning Model
+        run: python scripts/train_model.py
 
-        run: |
-
-          python scripts/train_model.py
-
-
-      # Step 7: Verify model files
       - name: Verify Model Files
-
         run: |
-
           echo "Checking generated model files"
-
           ls -lh models/
-
           test -f models/best_model.joblib
-
           test -f models/model_metadata.json
 
-
-      # Step 8: Upload trained model
       - name: Upload Trained Model
-
         uses: actions/upload-artifact@v4
-
         with:
-
           name: trained-model
-
           path: models/
-
           if-no-files-found: error
 
-
-      # Step 9: Upload training reports
       - name: Upload Model Reports
-
         uses: actions/upload-artifact@v4
-
         with:
-
           name: model-reports
-
           path: reports/
-
           if-no-files-found: warn
 
 
@@ -287,82 +187,44 @@ jobs:
 # --------------------------------------------------
 
   commit_model:
-
     name: Commit Updated Model to Main Branch
-
     runs-on: ubuntu-latest
-
     needs: model_training
 
     # Only commit model updates for main branch executions
     if: github.ref == 'refs/heads/main'
 
-
     steps:
-
-      # Step 1: Checkout main branch
       - name: Checkout Main Branch
-
         uses: actions/checkout@v4
-
         with:
-
           ref: main
-
           fetch-depth: 0
-
           persist-credentials: true
 
-
-      # Step 2: Download trained model
       - name: Download Trained Model
-
         uses: actions/download-artifact@v4
-
         with:
-
           name: trained-model
-
           path: models/
 
-
-      # Step 3: Download training reports
       - name: Download Model Reports
-
         uses: actions/download-artifact@v4
-
         with:
-
           name: model-reports
-
           path: reports/
 
-
-      # Step 4: Configure Git
       - name: Configure Git
-
         run: |
-
           git config user.name "github-actions[bot]"
-
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-
-      # Step 5: Commit updated model
       - name: Commit Updated Model
-
         run: |
-
           git add models/ reports/
-
           if git diff --cached --quiet; then
-
             echo "No model or report changes to commit"
-
           else
-
             git commit -m "Automated ML model update"
-
             git push origin HEAD:main
-
           fi
