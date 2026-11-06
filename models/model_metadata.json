@@ -1,0 +1,21 @@
+{
+  "model_name": "Random Forest Classifier",
+  "target_column": "ProdTaken",
+  "feature_columns": [
+    "Age",
+    "CityTier",
+    "Occupation",
+    "Gender",
+    "NumberOfPersonVisiting",
+    "PreferredPropertyStar",
+    "MaritalStatus",
+    "NumberOfTrips",
+    "Passport",
+    "OwnCar",
+    "NumberOfChildrenVisiting",
+    "Designation",
+    "MonthlyIncome"
+  ],
+  "classification_threshold": 0.5,
+  "test_accuracy": 0.99
+}
