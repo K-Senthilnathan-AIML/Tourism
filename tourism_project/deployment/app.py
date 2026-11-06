@@ -31,11 +31,10 @@ st.set_page_config(
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parents[1]
 
-MODEL_PATH = BASE_DIR / "models" / "best_model.joblib"
-
-METADATA_PATH = BASE_DIR / "models" / "model_metadata.json"
-
+MODEL_PATH = PROJECT_ROOT / "models" / "best_model.joblib"
+METADATA_PATH = PROJECT_ROOT / "models" / "model_metadata.json"
 
 # ============================================================
 # 3. APPLICATION TITLE
