@@ -62,35 +62,22 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-
-      # Step 3: Install dependencies
+ # Step 3: Install dependencies
       - name: Install Dependencies
-
         run: |
-
           python -m pip install --upgrade pip
-
           pip install -r requirements.txt
 
-
-      # Step 4: Validate dataset
-      - name: Register and Validate Dataset
-
-        run: |
-
-         - name: Upload Validated Data
-        uses: actions/upload-artifact@v4
+      # Restore the dataset created in the validation job
+      - name: Download Validated Data
+        uses: actions/download-artifact@v4
         with:
           name: validated-data
-          path: |
-            data/tourism.csv
-            reports/data_validation_report.json
-          if-no-files-found: error
+          path: .
 
-          
-
-          python scripts/register_data.py
-
+      # Step 4: Prepare data
+      - name: Prepare Training and Testing Data
+        run: python scripts/prepare_data.py
 
       # Step 5: Upload validation report
       - name: Upload Validation Report
